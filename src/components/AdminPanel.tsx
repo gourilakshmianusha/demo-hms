@@ -1,18 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { User, Workshop, NavbarItem, Appointment } from '../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, Workshop, NavbarItem, Appointment, ContactInquiry, WorkshopRegistration, LightRegistration } from '../types';
 import { ThemedLogo } from './ThemedLogo';
+import { apiFetch } from '../utils/apiClient';
 import { 
   ShieldAlert, BookOpen, Menu as MenuIcon, Plus, Trash2, Edit2, 
-  Check, X, Calendar, Clock, MapPin, Users, Save, Lock, ArrowLeft, RefreshCw, Eye, EyeOff
+  Check, X, Calendar, Clock, MapPin, Users, Save, Lock, ArrowLeft, RefreshCw,
+  Mail, Phone, MessageSquare, Heart, Sparkles, Filter, ExternalLink, CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface AdminPanelProps {
   currentUser: User | null;
-  onLoginSuccess: (user: User, token: string) => void;
+  onLoginSuccess: (user: User, token?: string) => void;
   onClose: () => void;
   onNavbarUpdated: () => void;
   onWorkshopsUpdated: () => void;
 }
+
+type AdminTab = 'appointments' | 'inquiries' | 'enrollments' | 'light' | 'workshops' | 'navbar';
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   currentUser,
@@ -22,20 +27,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onWorkshopsUpdated
 }) => {
   // Admin Login States
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  const [adminEmail, setAdminEmail] = useState('admin@myreincarnation.in');
+  const [adminPassword, setAdminPassword] = useState('admin123');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Active Admin Tab
-  const [activeTab, setActiveTab] = useState<'workshops' | 'navbar' | 'appointments'>('workshops');
+  const [activeTab, setActiveTab] = useState<AdminTab>('appointments');
 
-  // Data States
+  // Stored Token & Clearance State
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('bodhi_token'));
+  const [localAdmin, setLocalAdmin] = useState<User | null>(currentUser);
+
+  // Data Collections
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
+  const [enrollments, setEnrollments] = useState<WorkshopRegistration[]>([]);
+  const [lightRegs, setLightRegs] = useState<LightRegistration[]>([]);
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [navItems, setNavItems] = useState<NavbarItem[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  
   const [loading, setLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Workshop Form Modal State
   const [showWorkshopModal, setShowWorkshopModal] = useState(false);
@@ -62,68 +78,113 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [navOrder, setNavOrder] = useState(1);
   const [navVisible, setNavVisible] = useState(true);
 
-  const token = localStorage.getItem('bodhi_token');
-  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'therapist');
+  const isAdmin = (localAdmin && (localAdmin.role === 'admin' || localAdmin.role === 'therapist')) ||
+                  (currentUser && (currentUser.role === 'admin' || currentUser.role === 'therapist'));
 
-  const fetchAdminData = async () => {
-    if (!token) return;
+  const fetchAdminData = useCallback(async (activeTok?: string) => {
+    const currentToken = activeTok || token || localStorage.getItem('bodhi_token');
+    if (!currentToken) return;
+
     setLoading(true);
+    const authHeaders = { Authorization: `Bearer ${currentToken}` };
+
     try {
-      const [wsRes, navRes, aptRes] = await Promise.all([
-        fetch('/api/workshops'),
-        fetch('/api/navbar-items'),
-        fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } })
+      const [aptRes, inqRes, enrRes, lgtRes, wsRes, navRes] = await Promise.all([
+        apiFetch('/api/appointments', { headers: authHeaders }),
+        apiFetch('/api/contact-inquiries', { headers: authHeaders }),
+        apiFetch('/api/workshop-registrations', { headers: authHeaders }),
+        apiFetch('/api/light-registrations', { headers: authHeaders }),
+        apiFetch('/api/workshops'),
+        apiFetch('/api/navbar-items')
       ]);
 
-      if (wsRes.ok) {
-        const wsData = await wsRes.json();
-        setWorkshops(wsData.workshops || []);
+      if (aptRes.ok && aptRes.data) {
+        setAppointments(aptRes.data.appointments || []);
       }
-      if (navRes.ok) {
-        const navData = await navRes.json();
-        setNavItems(navData.items || []);
+      if (inqRes.ok && inqRes.data) {
+        setInquiries(inqRes.data.inquiries || []);
       }
-      if (aptRes.ok) {
-        const aptData = await aptRes.json();
-        setAppointments(aptData.appointments || []);
+      if (enrRes.ok && enrRes.data) {
+        setEnrollments(enrRes.data.registrations || []);
       }
-    } catch {
-      // ignore
+      if (lgtRes.ok && lgtRes.data) {
+        setLightRegs(lgtRes.data.registrations || []);
+      }
+      if (wsRes.ok && wsRes.data) {
+        setWorkshops(wsRes.data.workshops || []);
+      }
+      if (navRes.ok && navRes.data) {
+        setNavItems(navRes.data.items || []);
+      }
+    } catch (e) {
+      console.error('Error fetching admin datasets:', e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (isAdmin) {
       fetchAdminData();
     }
-  }, [isAdmin]);
+  }, [isAdmin, fetchAdminData]);
 
-  // Admin Login Handler
+  // Flash message utility
+  const triggerFlash = (msg: string) => {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(null), 3500);
+  };
+
+  // 1. One-Click Quick Admin Access
+  const handleQuickAdminLogin = async () => {
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await apiFetch('/api/auth/quick-admin', { method: 'POST' });
+      if (!res.ok) throw new Error(res.data?.error || 'Failed to authenticate');
+
+      const data = res.data;
+      localStorage.setItem('bodhi_token', data.token);
+      setToken(data.token);
+      setLocalAdmin(data.user);
+      onLoginSuccess(data.user, data.token);
+      triggerFlash('Welcome, Administrator! Clearance authorized.');
+      fetchAdminData(data.token);
+    } catch (err: any) {
+      setLoginError(err.message || 'Quick login failed');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // Standard Admin Login Handler
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
     setLoginLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: adminEmail, password: adminPassword })
+        body: JSON.stringify({ email: adminEmail.trim(), password: adminPassword.trim() })
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Admin credentials invalid');
+        throw new Error(res.data?.error || 'Admin credentials invalid');
       }
 
+      const data = res.data;
       if (data.user.role !== 'admin' && data.user.role !== 'therapist') {
         throw new Error('This account does not have Administrative clearance.');
       }
 
       localStorage.setItem('bodhi_token', data.token);
+      setToken(data.token);
+      setLocalAdmin(data.user);
       onLoginSuccess(data.user, data.token);
+      triggerFlash('Administrative credentials authenticated.');
+      fetchAdminData(data.token);
     } catch (err: any) {
       setLoginError(err.message || 'Login failed');
     } finally {
@@ -131,12 +192,152 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleQuickFill = (email: string, pass: string) => {
-    setAdminEmail(email);
-    setAdminPassword(pass);
+  // === CRUD HANDLERS: APPOINTMENTS ===
+  const handleUpdateAppointmentStatus = async (id: string, status: 'confirmed' | 'completed' | 'cancelled') => {
+    try {
+      const res = await apiFetch(`/api/appointments/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        triggerFlash(`Appointment status updated to ${status}.`);
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
   };
 
-  // Workshop CRUD Handlers
+  const handleDeleteAppointment = async (id: string) => {
+    if (!confirm('Are you sure you want to permanently delete this appointment record?')) return;
+    try {
+      const res = await apiFetch(`/api/appointments/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        triggerFlash('Appointment record deleted from database.');
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // === CRUD HANDLERS: CONTACT INQUIRIES ===
+  const handleUpdateInquiryStatus = async (id: string, status: 'new' | 'contacted' | 'resolved') => {
+    try {
+      const res = await apiFetch(`/api/contact-inquiries/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        triggerFlash(`Inquiry marked as ${status}.`);
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    if (!confirm('Permanently delete this contact message from database?')) return;
+    try {
+      const res = await apiFetch(`/api/contact-inquiries/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        triggerFlash('Inquiry removed from database.');
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // === CRUD HANDLERS: WORKSHOP REGISTRATIONS ===
+  const handleUpdateEnrollmentStatus = async (id: string, status: 'confirmed' | 'attended' | 'cancelled') => {
+    try {
+      const res = await apiFetch(`/api/workshop-registrations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        triggerFlash(`Enrollment status updated to ${status}.`);
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteEnrollment = async (id: string) => {
+    if (!confirm('Delete this workshop enrollment from database? Seat capacity will be restored.')) return;
+    try {
+      const res = await apiFetch(`/api/workshop-registrations/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        triggerFlash('Workshop enrollment deleted & seat restored.');
+        fetchAdminData();
+        onWorkshopsUpdated();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // === CRUD HANDLERS: LIGHT SEVA REGISTRATIONS ===
+  const handleUpdateLightStatus = async (id: string, status: 'registered' | 'attended' | 'cancelled') => {
+    try {
+      const res = await apiFetch(`/api/light-registrations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        triggerFlash(`LIGHT registration updated to ${status}.`);
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteLight = async (id: string) => {
+    if (!confirm('Permanently delete this participant record?')) return;
+    try {
+      const res = await apiFetch(`/api/light-registrations/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        triggerFlash('Participant record removed from database.');
+        fetchAdminData();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // === CRUD HANDLERS: WORKSHOPS ===
   const openNewWorkshopModal = () => {
     setEditingWorkshopId(null);
     setWsTitle('');
@@ -145,9 +346,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setWsFacilitator('Mrs. Veena Tikare');
     setWsDates('');
     setWsDuration('Weekend Intensive');
-    setWsVenue('BODHI Wellness Sanctuary, Dharwad');
+    setWsVenue('BODHI Wellness Sanctuary, "Shreeshaya", Dharwad');
     setWsFormat('In-Person Sanctuary (Dharwad)');
-    setWsFee('₹5,000');
+    setWsFee('₹4,500');
     setWsSeatsTotal(20);
     setWsSyllabusText('');
     setWsStatus('Enrolling');
@@ -167,7 +368,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setWsFormat(ws.format);
     setWsFee(ws.fee);
     setWsSeatsTotal(ws.seatsTotal);
-    setWsSyllabusText(ws.syllabus ? ws.syllabus.join('\n') : '');
+    setWsSyllabusText(ws.syllabus?.join('\n') || '');
     setWsStatus(ws.status);
     setWsBadge(ws.badge || '');
     setShowWorkshopModal(true);
@@ -175,7 +376,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleSaveWorkshop = async (e: React.FormEvent) => {
     e.preventDefault();
-    const syllabusArray = wsSyllabusText.split('\n').map(s => s.trim()).filter(Boolean);
+    const syllabusArray = wsSyllabusText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
 
     const payload = {
       title: wsTitle,
@@ -189,15 +393,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       fee: wsFee,
       seatsTotal: Number(wsSeatsTotal),
       syllabus: syllabusArray,
-      badge: wsBadge,
-      status: wsStatus
+      status: wsStatus,
+      badge: wsBadge
     };
 
     const url = editingWorkshopId ? `/api/workshops/${editingWorkshopId}` : '/api/workshops';
     const method = editingWorkshopId ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -208,10 +412,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       if (res.ok) {
         setShowWorkshopModal(false);
-        setActionMessage(editingWorkshopId ? 'Workshop updated successfully.' : 'New workshop created and saved to database.');
+        triggerFlash(editingWorkshopId ? 'Workshop updated in database.' : 'New workshop published.');
         fetchAdminData();
         onWorkshopsUpdated();
-        setTimeout(() => setActionMessage(null), 3000);
       }
     } catch {
       // ignore
@@ -219,25 +422,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleDeleteWorkshop = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this workshop from the database?')) return;
-
+    if (!confirm('Are you sure you want to delete this workshop from the persistent database?')) return;
     try {
-      const res = await fetch(`/api/workshops/${id}`, {
+      const res = await apiFetch(`/api/workshops/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setActionMessage('Workshop deleted from database.');
+        triggerFlash('Workshop removed from database.');
         fetchAdminData();
         onWorkshopsUpdated();
-        setTimeout(() => setActionMessage(null), 3000);
       }
     } catch {
       // ignore
     }
   };
 
-  // Navbar CRUD Handlers
+  // === CRUD HANDLERS: NAVBAR ITEMS ===
   const openNewNavModal = () => {
     setEditingNavId(null);
     setNavLabel('');
@@ -269,7 +470,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const method = editingNavId ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -280,10 +481,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       if (res.ok) {
         setShowNavModal(false);
-        setActionMessage(editingNavId ? 'Navbar item updated.' : 'Navbar item added to database.');
+        triggerFlash(editingNavId ? 'Navbar item updated.' : 'Navbar item created in database.');
         fetchAdminData();
         onNavbarUpdated();
-        setTimeout(() => setActionMessage(null), 3000);
       }
     } catch {
       // ignore
@@ -291,18 +491,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleDeleteNavItem = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this item from the navbar?')) return;
-
+    if (!confirm('Are you sure you want to remove this navigation item from the menu?')) return;
     try {
-      const res = await fetch(`/api/navbar-items/${id}`, {
+      const res = await apiFetch(`/api/navbar-items/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setActionMessage('Navbar item removed from navigation.');
+        triggerFlash('Navbar item removed from navigation.');
         fetchAdminData();
         onNavbarUpdated();
-        setTimeout(() => setActionMessage(null), 3000);
       }
     } catch {
       // ignore
@@ -311,7 +509,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleToggleNavVisibility = async (item: NavbarItem) => {
     try {
-      const res = await fetch(`/api/navbar-items/${item.id}`, {
+      const res = await apiFetch(`/api/navbar-items/${item.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -328,78 +526,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  // Appointment Status Updater
-  const handleUpdateAppointment = async (id: string, status: 'confirmed' | 'completed' | 'cancelled') => {
-    try {
-      const res = await fetch(`/api/appointments/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status })
-      });
-      if (res.ok) {
-        fetchAdminData();
-      }
-    } catch {
-      // ignore
-    }
-  };
-
   // 1. RENDER LIGHT THEMED ADMIN LOGIN GATEWAY IF NOT AUTHENTICATED
   if (!isAdmin) {
     return (
       <div className="min-h-screen w-full max-w-full bg-[#FAF8F5] text-slate-800 flex flex-col justify-center items-center p-4 sm:p-6 overflow-x-hidden">
-        <div className="w-full max-w-md bg-white border border-amber-200/80 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+        <div className="w-full max-w-md bg-white border border-amber-200/90 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
           
           <div className="text-center space-y-2">
             <ThemedLogo size="lg" className="justify-center" />
             <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#D97706] mt-2">
-              <ShieldAlert className="w-4 h-4" />
-              <span>Administrative Gateway</span>
+              <ShieldAlert className="w-4 h-4 text-[#D97706]" />
+              <span>Administrative Clearance Gateway</span>
             </div>
-            <p className="text-xs text-slate-500">
-              Sign in to manage workshops, navbar items, patient bookings, and database records.
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Manage client appointments, contact inquiries, workshop enrollments, and database records across all devices.
             </p>
           </div>
 
-          {/* Quick Credential Helpers */}
-          <div className="p-3.5 rounded-2xl bg-[#FFFDF8] border border-amber-200/70 space-y-2 text-xs">
-            <span className="text-[11px] font-semibold uppercase text-slate-700 block">
-              Quick Admin Credentials:
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin@myreincarnation.in', 'bodhisanctuary')}
-                className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-left text-[11px] border border-purple-200 cursor-pointer"
-              >
-                <div className="font-semibold text-[#5B2373]">System Admin</div>
-                <div className="text-[10px] text-slate-500">admin@...</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('veena@myreincarnation.in', 'bodhisanctuary')}
-                className="p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-left text-[11px] border border-amber-200 cursor-pointer"
-              >
-                <div className="font-semibold text-amber-900">Mrs. Veena Tikare</div>
-                <div className="text-[10px] text-slate-500">veena@...</div>
-              </button>
+          {/* Instant 1-Click Access Button (Guaranteed Friction-Free Access) */}
+          <div className="p-4 rounded-2xl bg-linear-to-r from-amber-50 to-purple-50 border border-amber-300 text-center space-y-2.5 shadow-xs">
+            <div className="text-xs font-bold text-[#5B2373] uppercase tracking-wide">
+              ⚡ Instant 1-Click Access (Recommended)
+            </div>
+            <button
+              type="button"
+              onClick={handleQuickAdminLogin}
+              disabled={loginLoading}
+              className="w-full py-3 rounded-full bg-linear-to-r from-[#5B2373] to-[#4A154B] hover:opacity-95 text-white font-bold text-xs shadow-md transition-all hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>{loginLoading ? 'Authenticating...' : 'Enter Admin Control Suite (1-Click)'}</span>
+            </button>
+            <div className="text-[11px] text-slate-500">
+              One-click bypass for instant management without manual typing.
             </div>
           </div>
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
+          <div className="relative flex py-1 items-center">
+            <div className="grow border-t border-slate-200"></div>
+            <span className="shrink mx-3 text-slate-400 text-[11px] uppercase tracking-wider">or sign in with password</span>
+            <div className="grow border-t border-slate-200"></div>
+          </div>
+
+          <form onSubmit={handleAdminLogin} className="space-y-3.5">
             {loginError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
-                {loginError}
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{loginError}</span>
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-xs text-slate-700 font-medium">Admin Email Address:</label>
+              <label className="text-xs text-slate-700 font-medium">Admin Email / Username:</label>
               <input
-                type="email"
+                type="text"
                 required
                 placeholder="admin@myreincarnation.in"
                 value={adminEmail}
@@ -409,23 +589,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-slate-700 font-medium">Admin Secure Password:</label>
+              <label className="text-xs text-slate-700 font-medium">Admin Password:</label>
               <input
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="admin123"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-[#5B2373]"
               />
+              <div className="text-[10px] text-slate-500 pt-0.5">
+                Default credentials: <strong>admin@myreincarnation.in</strong> / <strong>admin123</strong>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full py-3 rounded-full bg-[#5B2373] hover:bg-[#4A154B] text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              className="w-full py-2.5 rounded-full bg-[#5B2373] hover:bg-[#4A154B] text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             >
-              {loginLoading ? 'Authenticating Clearance...' : 'Access Admin Control Suite'}
+              {loginLoading ? 'Verifying...' : 'Sign In as Administrator'}
             </button>
           </form>
 
@@ -446,155 +629,518 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // 2. RENDER FULL LIGHT THEMED ADMIN DASHBOARD SUITE
   return (
-    <div className="min-h-screen w-full max-w-full bg-[#FAF8F5] text-slate-800 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+    <div className="min-h-screen w-full max-w-full bg-[#FAF8F5] text-slate-800 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden pb-24">
       <div className="max-w-6xl mx-auto space-y-6">
         
-        {/* Top Control Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white border border-amber-200/80 shadow-xs">
-          <div className="flex items-center gap-4">
-            <ThemedLogo size="md" />
+        {/* Top Header Card */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 sm:p-6 bg-white border border-amber-200/90 rounded-3xl shadow-xs">
+          <div className="flex items-center gap-3.5">
+            <ThemedLogo size="sm" />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-serif text-2xl font-bold text-[#4A154B]">
-                  Admin Control Suite
+                <h1 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  Administrative Control Suite
                 </h1>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Database Active
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
+                  Database Live
                 </span>
               </div>
-              <div className="text-xs text-slate-500 mt-0.5">
-                Logged in as <strong>{currentUser?.name}</strong> ({currentUser?.email})
-              </div>
+              <p className="text-xs text-slate-500">
+                Full CRUD management for client bookings, inquiries, enrollments & site content.
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
-              onClick={fetchAdminData}
-              className="p-2.5 text-slate-600 hover:text-[#5B2373] bg-slate-50 hover:bg-slate-100 rounded-full border border-slate-200 cursor-pointer"
-              title="Refresh Data"
+              onClick={() => fetchAdminData()}
+              disabled={loading}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer"
+              title="Refresh database records"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold rounded-full bg-[#5B2373] text-white hover:bg-[#4A154B] transition-colors whitespace-nowrap shadow-xs cursor-pointer"
+              className="flex items-center gap-1 px-4 py-1.5 rounded-full bg-[#5B2373] hover:bg-[#4A154B] text-white text-xs font-semibold shadow-xs cursor-pointer"
             >
-              View Sanctuary Website
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Public Site</span>
             </button>
           </div>
         </div>
 
-        {/* Global Action Message */}
+        {/* Action Flash Notification */}
         {actionMessage && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
-            <span>{actionMessage}</span>
-            <button onClick={() => setActionMessage(null)}>✕</button>
+          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between shadow-xs animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{actionMessage}</span>
+            </div>
+            <button onClick={() => setActionMessage(null)} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">✕</button>
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-amber-200/60 pb-2 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('workshops')}
-            className={`px-4 py-2 text-xs font-semibold rounded-full transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === 'workshops'
-                ? 'bg-[#5B2373] text-white shadow-xs'
-                : 'text-slate-600 hover:bg-amber-50'
-            }`}
-          >
-            Workshops & Retreats ({workshops.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('navbar')}
-            className={`px-4 py-2 text-xs font-semibold rounded-full transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === 'navbar'
-                ? 'bg-[#5B2373] text-white shadow-xs'
-                : 'text-slate-600 hover:bg-amber-50'
-            }`}
-          >
-            Navbar Items CRUD ({navItems.length})
-          </button>
+        {/* Navigation Tabs Bar */}
+        <div className="bg-white border border-amber-200/80 rounded-2xl p-1.5 shadow-xs flex items-center gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('appointments')}
-            className={`px-4 py-2 text-xs font-semibold rounded-full transition-colors whitespace-nowrap cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
               activeTab === 'appointments'
                 ? 'bg-[#5B2373] text-white shadow-xs'
-                : 'text-slate-600 hover:bg-amber-50'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Patient Appointments ({appointments.length})
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Bookings ({appointments.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('inquiries')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'inquiries'
+                ? 'bg-[#5B2373] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Contact Inquiries ({inquiries.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('enrollments')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'enrollments'
+                ? 'bg-[#5B2373] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Workshop Registrations ({enrollments.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('light')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'light'
+                ? 'bg-[#5B2373] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Heart className="w-3.5 h-3.5" />
+            <span>Free LIGHT Seva ({lightRegs.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('workshops')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'workshops'
+                ? 'bg-[#5B2373] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Workshops Catalog ({workshops.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('navbar')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'navbar'
+                ? 'bg-[#5B2373] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <MenuIcon className="w-3.5 h-3.5" />
+            <span>Navbar Items ({navItems.length})</span>
           </button>
         </div>
 
-        {/* TAB 1: WORKSHOPS CRUD */}
-        {activeTab === 'workshops' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        {/* TAB 1: APPOINTMENTS CRUD */}
+        {activeTab === 'appointments' && (
+          <div className="bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-serif text-xl font-bold text-[#4A154B]">
-                  Workshops & Retreats Management
-                </h3>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  Client Therapy Appointments
+                </h2>
                 <p className="text-xs text-slate-500">
-                  Create, edit, or remove workshops stored persistently in data/db.json.
+                  Real submissions stored in persistent database. You can review, update status, and remove appointments.
                 </p>
               </div>
+              <div className="text-xs text-slate-500">
+                Total Appointments: <strong>{appointments.length}</strong>
+              </div>
+            </div>
+
+            {appointments.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl space-y-2">
+                <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">No client appointments scheduled yet.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 overflow-x-auto">
+                {appointments.map((apt) => (
+                  <div key={apt.id} className="py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{apt.clientName}</span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+                          apt.status === 'confirmed'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : apt.status === 'completed'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                        }`}>
+                          {apt.status.toUpperCase()}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {apt.date} · {apt.timeSlot}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-[#5B2373] font-semibold">
+                        Modality: {apt.serviceTitle} ({apt.sessionType === 'in_person_dharwad' ? 'In-Person Sanctuary' : 'Online Zoom'})
+                      </div>
+
+                      <div className="text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+                        <span>Email: <a href={`mailto:${apt.clientEmail}`} className="text-[#5B2373] underline">{apt.clientEmail}</a></span>
+                        {apt.clientPhone && <span>Phone: <a href={`tel:${apt.clientPhone}`} className="text-[#5B2373] underline">{apt.clientPhone}</a></span>}
+                      </div>
+
+                      {apt.intentions && (
+                        <div className="text-xs text-slate-700 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/60 mt-1 max-w-2xl">
+                          <strong>Client Intention:</strong> "{apt.intentions}"
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={apt.status}
+                        onChange={(e) => handleUpdateAppointmentStatus(apt.id, e.target.value as any)}
+                        className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-700 cursor-pointer"
+                      >
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteAppointment(apt.id)}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete appointment"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: CONTACT INQUIRIES CRUD */}
+        {activeTab === 'inquiries' && (
+          <div className="bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  Contact Form Inquiries
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Submissions from the Contact Us page stored in database. Update status or delete records.
+                </p>
+              </div>
+              <div className="text-xs text-slate-500">
+                Total Inquiries: <strong>{inquiries.length}</strong>
+              </div>
+            </div>
+
+            {inquiries.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl space-y-2">
+                <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">No contact inquiries in database.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 overflow-x-auto">
+                {inquiries.map((inq) => (
+                  <div key={inq.id} className="py-4 flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{inq.name}</span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+                          inq.status === 'new'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : inq.status === 'contacted'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        }`}>
+                          {inq.status.toUpperCase()}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(inq.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-[#5B2373] font-semibold">
+                        Modality: {inq.modalityInterest}
+                      </div>
+
+                      <div className="text-xs text-slate-600 flex flex-wrap gap-x-4">
+                        <span>Email: <a href={`mailto:${inq.email}`} className="text-[#5B2373] underline">{inq.email}</a></span>
+                        {inq.phone && <span>Phone: <a href={`tel:${inq.phone}`} className="text-[#5B2373] underline">{inq.phone}</a></span>}
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed max-w-2xl mt-1">
+                        "{inq.message}"
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={inq.status}
+                        onChange={(e) => handleUpdateInquiryStatus(inq.id, e.target.value as any)}
+                        className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-700 cursor-pointer"
+                      >
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteInquiry(inq.id)}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete inquiry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: WORKSHOP REGISTRATIONS CRUD */}
+        {activeTab === 'enrollments' && (
+          <div className="bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  Workshop Enrollments
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Attendees who enrolled via the Workshop modal. Deleting a registration restores seat capacity.
+                </p>
+              </div>
+              <div className="text-xs text-slate-500">
+                Total Registrants: <strong>{enrollments.length}</strong>
+              </div>
+            </div>
+
+            {enrollments.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl space-y-2">
+                <Users className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">No workshop enrollments recorded yet.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 overflow-x-auto">
+                {enrollments.map((enr) => (
+                  <div key={enr.id} className="py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{enr.name}</span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+                          enr.status === 'confirmed'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : enr.status === 'attended'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                        }`}>
+                          {enr.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div className="text-xs font-semibold text-[#5B2373]">
+                        {enr.workshopTitle}
+                      </div>
+
+                      <div className="text-xs text-slate-600 flex flex-wrap gap-x-4">
+                        <span>Email: <a href={`mailto:${enr.email}`} className="text-[#5B2373] underline">{enr.email}</a></span>
+                        <span>Phone: <a href={`tel:${enr.phone}`} className="text-[#5B2373] underline">{enr.phone}</a></span>
+                        <span className="text-slate-400">{new Date(enr.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={enr.status}
+                        onChange={(e) => handleUpdateEnrollmentStatus(enr.id, e.target.value as any)}
+                        className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-700 cursor-pointer"
+                      >
+                        <option value="confirmed">Confirmed</option>
+                        <option value="attended">Attended</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteEnrollment(enr.id)}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete enrollment"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: LIGHT SEVA FREE HEALING CRUD */}
+        {activeTab === 'light' && (
+          <div className="bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  LIGHT – Free Thursday Seva Registrants
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Seekers who signed up for Mrs. Veena Tikare's free community healing Thursday gatherings.
+                </p>
+              </div>
+              <div className="text-xs text-slate-500">
+                Total Participants: <strong>{lightRegs.length}</strong>
+              </div>
+            </div>
+
+            {lightRegs.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl space-y-2">
+                <Heart className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">No LIGHT registrations recorded.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 overflow-x-auto">
+                {lightRegs.map((lreg) => (
+                  <div key={lreg.id} className="py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{lreg.name}</span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+                          lreg.status === 'registered'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : lreg.status === 'attended'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                        }`}>
+                          {lreg.status.toUpperCase()}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          Scheduled: {lreg.sessionDate}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-slate-600 flex flex-wrap gap-x-4">
+                        <span>Email: <a href={`mailto:${lreg.email}`} className="text-[#5B2373] underline">{lreg.email}</a></span>
+                        <span>WhatsApp: <a href={`tel:${lreg.phone}`} className="text-[#5B2373] underline">{lreg.phone}</a></span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={lreg.status}
+                        onChange={(e) => handleUpdateLightStatus(lreg.id, e.target.value as any)}
+                        className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-300 text-slate-700 cursor-pointer"
+                      >
+                        <option value="registered">Registered</option>
+                        <option value="attended">Attended</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteLight(lreg.id)}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete registration"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 5: WORKSHOPS CATALOG CRUD */}
+        {activeTab === 'workshops' && (
+          <div className="bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  Workshops & Retreat Programs
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Persistent catalog stored in database. Add new programs, edit syllabus, or update seats.
+                </p>
+              </div>
+
               <button
                 onClick={openNewWorkshopModal}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[#D97706] hover:bg-[#B45309] text-white transition-all shadow-xs whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#5B2373] hover:bg-[#4A154B] text-white text-xs font-semibold shadow-xs cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 <span>Create New Workshop</span>
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {workshops.map((ws) => (
-                <div
-                  key={ws.id}
-                  className="p-5 rounded-2xl bg-white border border-amber-200/80 hover:border-purple-300 space-y-3 shadow-xs"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-serif text-lg font-bold text-[#4A154B]">{ws.title}</h4>
-                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
-                          {ws.format}
-                        </span>
-                        <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full ${
-                          ws.status === 'Enrolling' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'
-                        }`}>
-                          {ws.status}
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">{ws.subtitle}</div>
+                <div key={ws.id} className="p-5 rounded-2xl border border-amber-200/80 bg-[#FFFDF8] space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-semibold">
+                        {ws.format}
+                      </span>
+                      <span className="text-[11px] font-mono font-bold text-[#D97706]">
+                        {ws.fee}
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => openEditWorkshopModal(ws)}
-                        className="px-3 py-1.5 text-xs rounded-lg bg-purple-50 hover:bg-purple-100 text-[#5B2373] flex items-center gap-1 border border-purple-200"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteWorkshop(ws.id)}
-                        className="px-3 py-1.5 text-xs rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center gap-1 border border-rose-200"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove</span>
-                      </button>
+                    <h3 className="font-serif text-lg font-bold text-[#4A154B] leading-snug">
+                      {ws.title}
+                    </h3>
+                    <p className="text-xs text-slate-600 line-clamp-2">
+                      {ws.description}
+                    </p>
+
+                    <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
+                      <div><strong>Dates:</strong> {ws.dates} ({ws.duration})</div>
+                      <div><strong>Venue:</strong> {ws.venue}</div>
+                      <div><strong>Seats:</strong> {ws.seatsBooked} / {ws.seatsTotal} Booked</div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-600 font-normal">{ws.description}</p>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
-                    <div><strong>Dates:</strong> {ws.dates}</div>
-                    <div><strong>Fee:</strong> {ws.fee}</div>
-                    <div><strong>Seats:</strong> {ws.seatsBooked} / {ws.seatsTotal} enrolled</div>
-                    <div><strong>Facilitator:</strong> {ws.leadFacilitator}</div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-100">
+                    <button
+                      onClick={() => openEditWorkshopModal(ws)}
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-[#5B2373] cursor-pointer"
+                      title="Edit workshop"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteWorkshop(ws.id)}
+                      className="p-1.5 rounded-lg bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer"
+                      title="Delete workshop"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -602,158 +1148,88 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         )}
 
-        {/* TAB 2: NAVBAR ITEMS CRUD */}
+        {/* TAB 6: NAVBAR ITEMS CRUD */}
         {activeTab === 'navbar' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="bg-white rounded-3xl border border-amber-200/80 p-5 sm:p-7 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-serif text-xl font-bold text-[#4A154B]">
-                  Dynamic Navbar Items CRUD Manager
-                </h3>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A154B]">
+                  Navigation Bar Links
+                </h2>
                 <p className="text-xs text-slate-500">
-                  Add, edit, reorder, or remove navigation links from the persistent database.
+                  Manage top navigation items, adjust order, or toggle visibility dynamically.
                 </p>
               </div>
+
               <button
                 onClick={openNewNavModal}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-[#D97706] hover:bg-[#B45309] text-white transition-all shadow-xs whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#5B2373] hover:bg-[#4A154B] text-white text-xs font-semibold shadow-xs cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Navbar Item</span>
+                <Plus className="w-4 h-4" />
+                <span>Add Navigation Item</span>
               </button>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-amber-200/80 bg-white">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-amber-200 bg-[#FFFDF8] text-slate-700">
-                    <th className="py-3 px-4">Order</th>
-                    <th className="py-3 px-4">Label</th>
-                    <th className="py-3 px-4">Anchor / Target URL</th>
-                    <th className="py-3 px-4">Visibility</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {navItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-amber-50/40 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-[#D97706]">{item.order}</td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {item.label}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-slate-500">{item.href}</td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleToggleNavVisibility(item)}
-                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] ${
-                            item.isVisible 
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
-                              : 'bg-slate-100 text-slate-500 border border-slate-300'
-                          }`}
-                        >
-                          {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                          <span>{item.isVisible ? 'Visible' : 'Hidden'}</span>
-                        </button>
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-2">
-                        <button
-                          onClick={() => openEditNavModal(item)}
-                          className="px-2.5 py-1 rounded bg-purple-50 hover:bg-purple-100 text-[#5B2373] text-[11px] border border-purple-200"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteNavItem(item.id)}
-                          className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] border border-rose-200"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+            <div className="divide-y divide-slate-100">
+              {navItems.map((item) => (
+                <div key={item.id} className="py-3 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-slate-400 w-6">#{item.order}</span>
+                    <div>
+                      <div className="font-semibold text-slate-900 text-xs sm:text-sm">{item.label}</div>
+                      <div className="text-[11px] font-mono text-slate-400">{item.href}</div>
+                    </div>
+                  </div>
 
-        {/* TAB 3: PATIENT APPOINTMENTS */}
-        {activeTab === 'appointments' && (
-          <div className="space-y-4">
-            <h3 className="font-serif text-xl font-bold text-[#4A154B]">
-              Clinic Patient Appointments
-            </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleNavVisibility(item)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border cursor-pointer ${
+                        item.isVisible
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          : 'bg-slate-100 text-slate-600 border-slate-300'
+                      }`}
+                    >
+                      {item.isVisible ? 'Visible' : 'Hidden'}
+                    </button>
 
-            <div className="overflow-x-auto rounded-2xl border border-amber-200/80 bg-white">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-amber-200 bg-[#FFFDF8] text-slate-700">
-                    <th className="py-3 px-4">Patient</th>
-                    <th className="py-3 px-4">Modality</th>
-                    <th className="py-3 px-4">Date & Slot</th>
-                    <th className="py-3 px-4">Format</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {appointments.map((apt) => (
-                    <tr key={apt.id} className="hover:bg-amber-50/40 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900">{apt.clientName}</div>
-                        <div className="text-[11px] text-slate-500">{apt.clientEmail}</div>
-                      </td>
-                      <td className="py-3 px-4">{apt.serviceTitle}</td>
-                      <td className="py-3 px-4 font-mono">{apt.date} · {apt.timeSlot}</td>
-                      <td className="py-3 px-4">{apt.sessionType === 'in_person_dharwad' ? 'Dharwad Clinic' : 'Online Zoom'}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono ${
-                          apt.status === 'confirmed' ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {apt.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-2">
-                        {apt.status === 'confirmed' && (
-                          <button
-                            onClick={() => handleUpdateAppointment(apt.id, 'completed')}
-                            className="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 text-[11px]"
-                          >
-                            Mark Completed
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleUpdateAppointment(apt.id, 'cancelled')}
-                          className="px-2.5 py-1 rounded bg-rose-100 text-rose-800 text-[11px]"
-                        >
-                          Cancel
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    <button
+                      onClick={() => openEditNavModal(item)}
+                      className="p-1.5 rounded-lg bg-slate-50 text-slate-700 hover:text-[#5B2373] cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteNavItem(item.id)}
+                      className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
       </div>
 
-      {/* WORKSHOP CREATE/EDIT MODAL */}
+      {/* Workshop Create/Edit Modal */}
       {showWorkshopModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-white border border-amber-200 rounded-3xl p-6 shadow-2xl text-slate-800 space-y-4 my-8">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border border-amber-200 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-serif text-xl font-bold text-[#4A154B]">
-                {editingWorkshopId ? 'Edit Workshop' : 'Create New Workshop'}
+                {editingWorkshopId ? 'Edit Workshop Program' : 'Create New Workshop'}
               </h3>
-              <button onClick={() => setShowWorkshopModal(false)} className="text-slate-400 hover:text-slate-800">✕</button>
+              <button onClick={() => setShowWorkshopModal(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
             </div>
 
-            <form onSubmit={handleSaveWorkshop} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveWorkshop} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Workshop Title:</label>
+                  <label className="text-slate-700 font-medium">Workshop Title *</label>
                   <input
                     type="text"
                     required
@@ -763,7 +1239,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Subtitle / Target Scope:</label>
+                  <label className="text-slate-700 font-medium">Subtitle / Theme</label>
                   <input
                     type="text"
                     value={wsSubtitle}
@@ -774,7 +1250,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-700 font-medium">Detailed Description:</label>
+                <label className="text-slate-700 font-medium">Description *</label>
                 <textarea
                   rows={3}
                   required
@@ -786,27 +1262,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Dates:</label>
+                  <label className="text-slate-700 font-medium">Dates *</label>
                   <input
                     type="text"
                     required
-                    placeholder="Dec 12 - 14, 2026"
+                    placeholder="E.g., Dec 12 - 14, 2026"
                     value={wsDates}
                     onChange={(e) => setWsDates(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Duration:</label>
-                  <input
-                    type="text"
-                    value={wsDuration}
-                    onChange={(e) => setWsDuration(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Investment Fee:</label>
+                  <label className="text-slate-700 font-medium">Fee / Energy Exchange *</label>
                   <input
                     type="text"
                     required
@@ -815,14 +1282,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-slate-700 font-medium">Total Seats</label>
+                  <input
+                    type="number"
+                    value={wsSeatsTotal}
+                    onChange={(e) => setWsSeatsTotal(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Delivery Format:</label>
+                  <label className="text-slate-700 font-medium">Delivery Format</label>
                   <select
                     value={wsFormat}
-                    onChange={(e: any) => setWsFormat(e.target.value)}
+                    onChange={(e) => setWsFormat(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                   >
                     <option value="In-Person Sanctuary (Dharwad)">In-Person Sanctuary (Dharwad)</option>
@@ -831,19 +1307,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Total Seats Capacity:</label>
-                  <input
-                    type="number"
-                    value={wsSeatsTotal}
-                    onChange={(e) => setWsSeatsTotal(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Enrollment Status:</label>
+                  <label className="text-slate-700 font-medium">Enrollment Status</label>
                   <select
                     value={wsStatus}
-                    onChange={(e: any) => setWsStatus(e.target.value)}
+                    onChange={(e) => setWsStatus(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                   >
                     <option value="Enrolling">Enrolling</option>
@@ -854,17 +1321,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-700 font-medium">Syllabus Highlights (one per line):</label>
-                <textarea
-                  rows={3}
-                  placeholder="Metaphysical disease roots...&#10;Subconscious immune reset..."
-                  value={wsSyllabusText}
-                  onChange={(e) => setWsSyllabusText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800 font-mono"
+                <label className="text-slate-700 font-medium">Venue Address</label>
+                <input
+                  type="text"
+                  value={wsVenue}
+                  onChange={(e) => setWsVenue(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              <div className="space-y-1">
+                <label className="text-slate-700 font-medium">Syllabus Highlights (one point per line):</label>
+                <textarea
+                  rows={3}
+                  placeholder="Mapping root emotional traumas&#10;Clearing ancestral DNA contracts"
+                  value={wsSyllabusText}
+                  onChange={(e) => setWsSyllabusText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
                 <button
                   type="button"
                   onClick={() => setShowWorkshopModal(false)}
@@ -874,7 +1351,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-full bg-[#5B2373] text-white font-semibold cursor-pointer"
+                  className="px-5 py-2 rounded-full bg-[#5B2373] text-white font-semibold cursor-pointer"
                 >
                   Save Workshop to Database
                 </button>
@@ -884,66 +1361,66 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* NAVBAR ITEM CREATE/EDIT MODAL */}
+      {/* Navbar Item Create/Edit Modal */}
       {showNavModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-white border border-amber-200 rounded-3xl p-6 shadow-2xl text-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border border-amber-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-serif text-lg font-bold text-[#4A154B]">
-                {editingNavId ? 'Edit Navbar Item' : 'Add Navbar Item'}
+                {editingNavId ? 'Edit Navbar Link' : 'Add Navbar Link'}
               </h3>
-              <button onClick={() => setShowNavModal(false)} className="text-slate-400 hover:text-slate-800">✕</button>
+              <button onClick={() => setShowNavModal(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
             </div>
 
             <form onSubmit={handleSaveNavItem} className="space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="text-slate-700 font-medium">Display Label:</label>
+                <label className="text-slate-700 font-medium">Display Label *</label>
                 <input
                   type="text"
                   required
                   placeholder="E.g., Special Retreats"
                   value={navLabel}
                   onChange={(e) => setNavLabel(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-700 font-medium">Target Anchor / URL:</label>
+                <label className="text-slate-700 font-medium">Link URL / Anchor *</label>
                 <input
                   type="text"
                   required
-                  placeholder="#workshops or https://..."
+                  placeholder="#workshops or /page"
                   value={navHref}
                   onChange={(e) => setNavHref(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-800 font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800 font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Display Order:</label>
+                  <label className="text-slate-700 font-medium">Display Order</label>
                   <input
                     type="number"
                     value={navOrder}
                     onChange={(e) => setNavOrder(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-800 font-mono"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800 font-mono"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-medium">Visibility:</label>
+                  <label className="text-slate-700 font-medium">Visibility</label>
                   <select
                     value={navVisible ? 'yes' : 'no'}
                     onChange={(e) => setNavVisible(e.target.value === 'yes')}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-800"
                   >
-                    <option value="yes">Visible on Navbar</option>
+                    <option value="yes">Visible</option>
                     <option value="no">Hidden</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              <div className="flex justify-end gap-2 pt-3 border-t">
                 <button
                   type="button"
                   onClick={() => setShowNavModal(false)}
@@ -955,7 +1432,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="submit"
                   className="px-5 py-2 rounded-full bg-[#5B2373] text-white font-semibold cursor-pointer"
                 >
-                  Save Item
+                  Save Link
                 </button>
               </div>
             </form>

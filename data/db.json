@@ -90,7 +90,30 @@
       "createdAt": "2026-10-19T08:00:00.000Z"
     }
   ],
-  "contactInquiries": [],
+  "contactInquiries": [
+    {
+      "id": "inq_1",
+      "name": "Rohan Kulkarni",
+      "email": "rohan.kulkarni@gmail.com",
+      "phone": "+91 9845088219",
+      "message": "Hello Veena maam, I have been suffering from severe chronic anxiety and psychosomatic stomach cramps for 4 years. All medical reports are normal. Can Past Life Regression help me uncover the root cause?",
+      "modalityInterest": "Past Life Regression",
+      "status": "new",
+      "adminNotes": "Candidate for initial 2-hour PLR intake in Dharwad.",
+      "createdAt": "2026-11-10T10:15:00.000Z"
+    },
+    {
+      "id": "inq_2",
+      "name": "Dr. Shruti Patil",
+      "email": "shruti.patil@kims.edu",
+      "phone": "+91 9741238910",
+      "message": "Interested in EKAA Level 1 hypnotherapy certification course next month. Please share syllabus and clinical accreditation details.",
+      "modalityInterest": "EKAA Training Certification",
+      "status": "contacted",
+      "adminNotes": "IMDHA prospectus and syllabus emailed on Nov 11.",
+      "createdAt": "2026-11-11T14:40:00.000Z"
+    }
+  ],
   "workshops": [
     {
       "id": "ws_metaphysical_retreat",
@@ -104,7 +127,7 @@
       "format": "In-Person Sanctuary (Dharwad)",
       "fee": "₹12,500 (Includes Organic Meals & Healing Biofield Scan)",
       "seatsTotal": 25,
-      "seatsBooked": 19,
+      "seatsBooked": 20,
       "syllabus": [
         "Metaphysical origin mapping of Diabetes, Thyroid and Cellular Inflammation",
         "Clearing hereditary emotional trauma passed through ancestral DNA",
@@ -253,6 +276,67 @@
       "isSpecial": true,
       "specialType": "quiz",
       "createdAt": "2026-01-01"
+    }
+  ],
+  "workshopRegistrations": [
+    {
+      "id": "wreg_1794484447724",
+      "workshopId": "ws_metaphysical_retreat",
+      "workshopTitle": "Metaphysical Disease Healing & Reversal Retreat",
+      "name": "Deepa Patil",
+      "email": "deepa.patil@yahoo.com",
+      "phone": "+91 9480776655",
+      "status": "confirmed",
+      "createdAt": "2026-11-12T11:54:07.724Z"
+    },
+    {
+      "id": "wreg_1",
+      "workshopId": "ws_metaphysical_retreat",
+      "workshopTitle": "Metaphysical Disease Healing & Reversal Retreat",
+      "name": "Sunita Hegde",
+      "email": "sunita.hegde@outlook.com",
+      "phone": "+91 9480112233",
+      "status": "confirmed",
+      "createdAt": "2026-11-08T09:00:00.000Z"
+    },
+    {
+      "id": "wreg_2",
+      "workshopId": "ws_ekaa_hypnotherapy",
+      "workshopTitle": "EKAA Integrated Clinical Hypnotherapy Certification (Level 1)",
+      "name": "Mahesh Joshi",
+      "email": "mahesh.joshi@gmail.com",
+      "phone": "+91 9900445566",
+      "status": "confirmed",
+      "createdAt": "2026-11-09T16:20:00.000Z"
+    }
+  ],
+  "lightRegistrations": [
+    {
+      "id": "lreg_1794484447741",
+      "name": "Santosh K",
+      "email": "santosh.k@gmail.com",
+      "phone": "+91 9900887766",
+      "sessionDate": "Upcoming Thursday (07:00 PM IST)",
+      "status": "registered",
+      "createdAt": "2026-11-12T11:54:07.741Z"
+    },
+    {
+      "id": "lreg_1",
+      "name": "Ananya Deshpande",
+      "email": "ananya.d@gmail.com",
+      "phone": "+91 9845112299",
+      "sessionDate": "Upcoming Thursday (07:00 PM IST)",
+      "status": "registered",
+      "createdAt": "2026-11-10T18:00:00.000Z"
+    },
+    {
+      "id": "lreg_2",
+      "name": "Karthik Rao",
+      "email": "karthik.rao@yahoo.com",
+      "phone": "+91 9740556677",
+      "sessionDate": "Upcoming Thursday (07:00 PM IST)",
+      "status": "registered",
+      "createdAt": "2026-11-11T11:30:00.000Z"
     }
   ]
 }

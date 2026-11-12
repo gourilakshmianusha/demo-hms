@@ -20,11 +20,16 @@ export interface Service {
   fullDesc: string;
   durationMinutes: number;
   format: 'Both' | 'In-Person (Dharwad)' | 'Online (Zoom)';
-  category: 'Regression & Mind' | 'Energy & Aura' | 'Divination & Intuitive' | 'Certifications';
+  category: 'Regression & Mind' | 'Energy & Aura' | 'Divination & Intuitive' | 'Breath & Meditation';
   indications: string[];
   recommendedSessions: string;
   investment: string;
   badge?: string;
+  image?: string;
+  whyItWorks?: string;
+  protocolSteps?: { step: string; title: string; description: string }[];
+  clientPreparation?: string[];
+  benefits?: string[];
 }
 
 export interface Workshop {
@@ -108,3 +113,37 @@ export interface SoulQuizResult {
   explanation: string;
   energyFocus: string;
 }
+
+export interface ContactInquiry {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  modalityInterest: string;
+  status: 'new' | 'contacted' | 'resolved';
+  adminNotes?: string;
+  createdAt: string;
+}
+
+export interface WorkshopRegistration {
+  id: string;
+  workshopId: string;
+  workshopTitle: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: 'confirmed' | 'attended' | 'cancelled';
+  createdAt: string;
+}
+
+export interface LightRegistration {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  sessionDate: string;
+  status: 'registered' | 'attended' | 'cancelled';
+  createdAt: string;
+}
+

@@ -27,9 +27,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [date, setDate] = useState<string>(
     new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]
   );
+  const [guestName, setGuestName] = useState<string>('');
+  const [guestEmail, setGuestEmail] = useState<string>('');
+  const [phone, setPhone] = useState<string>(user?.phone || '');
   const [timeSlot, setTimeSlot] = useState<string>('10:30 AM - 12:30 PM');
   const [intentions, setIntentions] = useState<string>('');
-  const [phone, setPhone] = useState<string>(user?.phone || '');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +45,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!user) {
-      onRequireAuth();
+    if (!user && (!guestName.trim() || !guestEmail.trim())) {
+      setError('Please provide your name and email to confirm the appointment.');
       return;
     }
 
@@ -52,12 +54,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
     try {
       const token = localStorage.getItem('bodhi_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/appointments', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify({
           serviceId: currentService.id,
           serviceTitle: currentService.title,
@@ -65,7 +69,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           date,
           timeSlot,
           intentions,
-          clientPhone: phone
+          clientName: user ? user.name : guestName.trim(),
+          clientEmail: user ? user.email : guestEmail.trim().toLowerCase(),
+          clientPhone: user ? (phone || user.phone) : phone.trim()
         })
       });
 
@@ -142,16 +148,64 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               
-              {!user && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between gap-3">
-                  <span>Sign in or create a member account to book and view your session in your sanctuary portal.</span>
-                  <button
-                    type="button"
-                    onClick={onRequireAuth}
-                    className="px-4 py-1.5 rounded-full bg-[#5B2373] text-white font-semibold whitespace-nowrap cursor-pointer"
-                  >
-                    Sign In
-                  </button>
+              {!user ? (
+                <div className="space-y-3 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#D97706] uppercase tracking-wide">
+                      Guest Booking Information:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={onRequireAuth}
+                      className="text-[11px] text-[#5B2373] underline font-medium hover:text-[#4A154B] cursor-pointer"
+                    >
+                      Already a member? Sign in
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-slate-700">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="E.g., Arvind Desai"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-[#5B2373]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-slate-700">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="arvind@example.com"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-[#5B2373]"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-slate-700">WhatsApp / Phone *</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="+91 98450..."
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-[#5B2373]"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200 text-xs flex items-center justify-between text-slate-700">
+                  <div>
+                    <span className="text-slate-500">Booking as: </span>
+                    <span className="font-bold text-[#5B2373]">{user.name}</span>
+                    <span className="text-[10px] text-slate-500 ml-1.5">({user.email})</span>
+                  </div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
                 </div>
               )}
 

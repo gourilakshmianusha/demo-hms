@@ -157,7 +157,7 @@ export default function App() {
           onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         />
       ) : (
-        <main className="flex-1 w-full max-w-full overflow-x-hidden">
+        <main className="flex-1 w-full max-w-full overflow-x-hidden pb-16 lg:pb-0">
           {activePage === 'home' && (
             <HomePage
               onOpenBooking={() => {

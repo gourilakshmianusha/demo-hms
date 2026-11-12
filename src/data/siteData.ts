@@ -256,17 +256,36 @@ export const SERVICES_DATA: Service[] = [
   {
     id: 'past-life-regression',
     title: 'Past Life Regression Therapy (PLR)',
-    subtitle: 'Transpersonal Soul Travel & Karmic Root Cause Resolution',
-    shortDesc: 'Journey into subconscious memory vaults to identify and heal soul impressions (Samskaras) causing present-life blockages.',
+    subtitle: 'Transpersonal Soul Memory & Karmic Root Cause Resolution',
+    shortDesc: 'Journey into deep subconscious memory vaults to identify and heal soul impressions (Samskaras) causing present-life blockages.',
     fullDesc: 'Past Life Regression is a gentle, deeply relaxing clinical hypnosis method accredited by TASSO International. It enables clients to access soul memories that hold unexpressed grief, karmic contracts, vows of poverty or suffering, and root causes of unexplained phobias or physical ailments.',
     durationMinutes: 120,
     format: 'Both',
     category: 'Regression & Mind',
+    image: '/src/assets/real/plr.jpg',
+    whyItWorks: 'The subconscious mind stores multi-incarnational energetic imprints. When an uncompleted traumatic death, soul contract, or emotional shock from a prior lifetime remains unresolved, it manifests in the present body as irrational phobias, persistent relationship discord, or psychosomatic aches that do not respond to physical medicine.',
+    protocolSteps: [
+      { step: '01', title: 'Intake & Karmic Pattern Mapping', description: 'Detailed exploration of current life challenges, recurring patterns, irrational fears, and emotional triggers.' },
+      { step: '02', title: 'Deep Somatic Relaxation & Trance Induction', description: 'Gentle guidance into the receptive alpha-theta state where critical mental chatter recedes and higher soul awareness awakens.' },
+      { step: '03', title: 'Soul Exploration & Lifetime Re-experience', description: 'Revisiting the origin lifetime, understanding its emotional knots, and witnessing the transition point with detachment.' },
+      { step: '04', title: 'Vow Revocation & Soul Integration', description: 'Consciously dissolving outdated vows of suffering, reclaiming fragmented soul vitality, and integrating higher lessons into present life.' }
+    ],
     indications: [
       'Unexplained chronic pain or illnesses resisting medical diagnosis',
-      'Intense irrational phobias (heights, water, fire, confinement)',
-      'Complex karmic bonds and toxic relationship loops',
-      'Persistent feelings of "not belonging" or searching for life purpose'
+      'Intense irrational phobias (heights, water, fire, confinement, darkness)',
+      'Complex karmic bonds and painful recurring relationship loops',
+      'Persistent existential sadness, feeling of not belonging, or searching for soul purpose'
+    ],
+    benefits: [
+      'Permanent release of deep-seated irrational fears',
+      'Profound relief from psychosomatic aches with no biological cause',
+      'Deep emotional forgiveness and reconciliation in family relationships',
+      'Direct experiential realization of soul continuity beyond bodily death'
+    ],
+    clientPreparation: [
+      'Eat light, vegetarian meals on the day of the session',
+      'Avoid caffeine or stimulants at least 3 hours prior',
+      'Bring a personal journal to write down immediate soul insights'
     ],
     recommendedSessions: '2 - 3 Sessions',
     investment: '₹4,500 / session',
@@ -274,94 +293,404 @@ export const SERVICES_DATA: Service[] = [
   },
   {
     id: 'clinical-hypnotherapy',
-    title: 'Clinical Hypnotherapy & Subconscious Reprogramming',
-    subtitle: 'Scientific Subconscious Alignment (EKAA / IMDHA Certified)',
-    shortDesc: 'Bypass the critical mind filter to replace self-defeating habits, chronic stress, insomnia, and psychosomatic symptoms.',
+    title: 'Clinical Hypnotherapy & Mind Mechanics',
+    subtitle: 'Scientific Subconscious Reprogramming (EKAA / IMDHA Certified)',
+    shortDesc: 'Bypass the conscious critical filter to release self-defeating habits, chronic stress, insomnia, and psychosomatic complaints.',
     fullDesc: 'Recognized by the International Medical & Dental Hypnotherapy Association (IMDHA, USA), our hypnotherapy protocols utilize deep alpha-theta brainwave states to access the emotional subconscious, untangle limiting beliefs, and anchor empowering neurological pathways.',
     durationMinutes: 90,
     format: 'Both',
     category: 'Regression & Mind',
+    image: '/src/assets/real/hypnotherapy.jpg',
+    whyItWorks: 'The conscious mind represents only 10% of our mental processing; the remaining 90% is governed by the subconscious. Hypnotherapy establishes direct communication with this powerful inner operating system, rewiring deep neural circuits that drive behavioral habits and autonomic responses.',
+    protocolSteps: [
+      { step: '01', title: 'Suggestibility Profiling & Goal Setting', description: 'Assessing your unique physical/emotional learning style and crystallizing therapeutic target outcomes.' },
+      { step: '02', title: 'Permissive Trance Induction', description: 'Soothing guided induction that calms the sympathetic nervous system and facilitates natural brainwave slowing.' },
+      { step: '03', title: 'Subconscious Scripting & Reframing', description: 'Presenting positive therapeutic metaphors and direct subconscious suggestions to dissolve old behavioral scripts.' },
+      { step: '04', title: 'Anchoring & Post-Hypnotic Integration', description: 'Creating physical and mental trigger anchors that you can activate anytime in everyday life to access calm confidence.' }
+    ],
     indications: [
-      'Severe anxiety, panic attacks, and chronic insomnia',
+      'Severe anxiety, panic episodes, and chronic insomnia',
       'Smoking cessation, weight management, and behavioral compulsions',
       'Low self-worth, public speaking dread, and imposter syndrome',
-      'Psychosomatic digestive, skin, and autoimmune flare-ups'
+      'Psychosomatic digestive (IBS), skin conditions, and autoimmune flare-ups'
+    ],
+    benefits: [
+      'Restoration of deep, restful and natural sleep cycles',
+      'Elimination of compulsive habits without feeling deprivation',
+      'Nervous system down-regulation and sustained inner peace',
+      'Heightened focus, memory retention, and mental sovereignty'
+    ],
+    clientPreparation: [
+      'Wear comfortable, unrestrictive clothing',
+      'Keep a quiet environment if participating online via Zoom',
+      'Prepare a clear list of the specific emotional habits you wish to transform'
     ],
     recommendedSessions: '3 - 5 Sessions',
     investment: '₹3,500 / session',
     badge: 'EKAA Accredited'
   },
   {
+    id: 'family-constellation',
+    title: 'Family Constellation & Systemic Lineage Healing',
+    subtitle: 'Bert Hellinger Systemic Therapy for Ancestral Burdens & Orders of Love',
+    shortDesc: 'Uncover unseen energetic loyalties to ancestors and restore the natural Order of Love across your multi-generational lineage.',
+    fullDesc: 'Often, individual suffering is an unconscious attempt to carry the burden of an excluded, forgotten, or traumatized ancestor. Family Constellations bring systemic balance, releasing ancestral trauma, broken marriages, and financial ruins passed down through DNA and subtle fields.',
+    durationMinutes: 100,
+    format: 'Both',
+    category: 'Regression & Mind',
+    image: '/src/assets/real/family_constellation.jpg',
+    whyItWorks: 'Every family operates as a morphic field governed by systemic laws known as the Orders of Love. When an ancestor was unjustly excluded, aborted without mourning, or suffered an untimely tragic death, younger descendants unconsciously reproduce that fate out of blind loyalty until balance is consciously restored.',
+    protocolSteps: [
+      { step: '01', title: 'Genogram & Lineage History Mapping', description: 'Tracing significant familial events across 3-4 generations including early deaths, bankruptcies, migrations, or systemic exclusions.' },
+      { step: '02', title: 'Field Representation & Spatial Setup', description: 'Setting up representatives (or energetic markers) in the morphogenetic field to visualize unseen family dynamics.' },
+      { step: '03', title: 'Healing Sentences & Ritual Reconciliation', description: 'Speaking sacred resolving systemic truths that give every family member their rightful place of dignity.' },
+      { step: '04', title: 'Lineage Blessing Transfer', description: 'Returning inherited burdens back to ancestors with respect and opening to receive life force flowing from behind you.' }
+    ],
+    indications: [
+      'Recurring generational patterns (early death, financial ruin, repeating divorces)',
+      'Unexplainable alienation between parents, siblings, or children',
+      'Feeling an invisible heavy weight or living someone else\'s destiny',
+      'Infertility, adoption complexities, and profound inherited guilt'
+    ],
+    benefits: [
+      'Profound lifting of heavy, unexplainable emotional depression',
+      'Spontaneous thawing of long-standing family estrangements',
+      'Freedom to succeed and love without guilt toward your ancestors',
+      'Deep systemic peace throughout both maternal and paternal lineages'
+    ],
+    clientPreparation: [
+      'Gather known dates and life events of parents, grandparents, and maternal/paternal uncles/aunts',
+      'Come with an open, non-judgmental heart toward your lineage'
+    ],
+    recommendedSessions: '1 - 2 Sessions',
+    investment: '₹4,000 / session',
+    badge: 'Systemic Healing'
+  },
+  {
     id: 'inner-child-womb-healing',
-    title: 'Inner Child & Womb Regression Healing',
-    subtitle: 'Dissolving Developmental Trauma & Pre-Natal Imprints',
-    shortDesc: 'Rescue and nurture neglected developmental stages and in-utero emotional distress absorbed from maternal environments.',
-    fullDesc: 'Many adult defense mechanisms stem from subconscious emotional vows taken before age 7 or during gestation. This therapy re-parents the wounded inner child, safely discharges frozen survival energy, and rewires the emotional body for unconditional self-love and emotional safety.',
+    title: 'Inner Child Healing & Womb Regression / Hypnobirthing',
+    subtitle: 'Dissolving Developmental Trauma, Pre-Natal Imprints & Maternal Bonding',
+    shortDesc: 'Rescue and nurture neglected developmental stages, in-utero emotional distress, and birth conditioning using Marie Mongan methods.',
+    fullDesc: 'Many adult defense mechanisms stem from subconscious emotional vows taken before age 7 or during gestation. This therapy re-parents the wounded inner child, safely discharges frozen survival energy, and rewires the emotional body for unconditional self-love, reproductive ease, and nervous system safety.',
     durationMinutes: 90,
     format: 'Both',
     category: 'Regression & Mind',
+    image: '/src/assets/real/inner_child.jpg',
+    whyItWorks: 'During embryonic gestation and early infancy, human consciousness absorbs the mother\'s hormonal and emotional climate unfiltered. Womb regression allows the soul to revisit this tender foundational period, clear absorbed cortisol/distress, and experience radiant womb re-parenting.',
+    protocolSteps: [
+      { step: '01', title: 'Timeline Age Regression', description: 'Following the emotional thread back to the specific developmental stage where safety or love was first compromised.' },
+      { step: '02', title: 'Womb Stage & Pre-Natal Exploration', description: 'Accessing the in-utero energetic envelope to clear absorbed maternal grief, panic, or unreadiness.' },
+      { step: '03', title: 'Inner Re-Parenting Ritual', description: 'Connecting the mature adult self with the vulnerable child/fetus, offering the safety, protection, and unconditional acceptance it lacked.' },
+      { step: '04', title: 'Re-Birth & Cord Blessing', description: 'Experiencing an empowered, gentle energetic birth into light, establishing profound somatic grounding.' }
+    ],
     indications: [
-      'Abandonment terror, clinginess, or emotional detachment',
-      'Suppressed childhood grief, maternal or paternal wounds',
-      'Chronic guilt, people-pleasing, or inability to establish boundaries',
-      'Difficult pre-natal environment or traumatic birth memories'
+      'Chronic feelings of abandonment, hyper-vigilance, and emotional clinginess',
+      'Deep maternal or paternal wounds and unhealed childhood rejection',
+      'Severe people-pleasing, inability to say no, and persistent core shame',
+      'Fear of pregnancy/childbirth, reproductive health tensions, or traumatic birth memories'
+    ],
+    benefits: [
+      'Instant dissolution of harsh internal self-criticism',
+      'Restoration of genuine playfulness, creativity, and self-compassion',
+      'Healthy boundary-setting without terror of rejection',
+      'Harmonious reproductive health and empowered hypnobirthing confidence'
+    ],
+    clientPreparation: [
+      'Reflect on childhood memories and early family relationships',
+      'Keep a soft blanket or cushion nearby for grounding during somatic release'
     ],
     recommendedSessions: '2 - 4 Sessions',
     investment: '₹3,800 / session'
   },
   {
-    id: 'family-constellation',
-    title: 'Family Constellation & Systemic Ancestral Healing',
-    subtitle: 'Bert Hellinger Systemic Therapy for Multi-Generational Entanglements',
-    shortDesc: 'Uncover unseen energetic loyalties to ancestors and restore the natural Order of Love in your family lineage.',
-    fullDesc: 'Often, individual suffering is an unconscious attempt to carry the burden of an excluded, forgotten, or traumatized ancestor. Family Constellations bring systemic balance, releasing ancestral trauma, broken marriages, and financial ruins passed down through DNA and subtle fields.',
-    durationMinutes: 100,
+    id: 'metaphysical-disease-healing',
+    title: 'Metaphysical Disease Healing & Reversal',
+    subtitle: 'Decoding Subconscious & Emotional Origin Roots of Chronic Illness',
+    shortDesc: 'Uncover and resolve the metaphysical root causes behind Diabetes, B.P, Thyroid disorders, PCOD, and psychosomatic chronic conditions.',
+    fullDesc: 'Every physical disease begins first as an emotional, mental, or ancestral imbalance in the biofield before it somaticizes into cellular pathology. At BODHI Wellness Centre, Mrs. Veena Tikare decodes the symbolic organ language of your condition, enabling your immune and endocrine systems to resume natural homeostasis without drug dependence.',
+    durationMinutes: 90,
     format: 'Both',
     category: 'Regression & Mind',
-    indications: [
-      'Recurring generational patterns (early death, financial ruin, divorces)',
-      'Unexplainable alienation between parents, siblings, or children',
-      'Feeling an invisible weight or living someone else\'s destiny',
-      'Infertility, adoption complexities, and profound guilt'
+    image: '/src/assets/real/collage.jpg',
+    whyItWorks: 'Cells possess consciousness and directly respond to mental neurotransmitters and energetic blockages. When prolonged emotional suppression (e.g. chronic bitterness causing pancreas dysregulation, or unspoken truth causing thyroid nodules) is dissolved, the biology spontaneously initiates restorative cellular repair.',
+    protocolSteps: [
+      { step: '01', title: 'Metaphysical Symptom & Organ Mapping', description: 'Translating the physical diagnosis into its corresponding emotional, mental, and chakra root meaning.' },
+      { step: '02', title: 'Cellular Dialogue & Subconscious Inquiry', description: 'Connecting directly with the affected organ or symptom to listen to what emotional truth it has been holding.' },
+      { step: '03', title: 'Emotional Detox & Forgiveness Release', description: 'Releasing suppressed resentment, ancestral disease programs, and subconscious benefits of being sick.' },
+      { step: '04', title: 'Cellular Vitality & DNA Awakening', description: 'Guiding healing golden bio-photonic light into the cellular matrix to reprogram the organs for vibrant health.' }
     ],
-    recommendedSessions: '1 - 2 Sessions',
-    investment: '₹4,000 / session'
+    indications: [
+      'Type 2 Diabetes, hypertension, and endocrine imbalances',
+      'Hypothyroidism / Hyperthyroidism and hormonal irregularities',
+      'PCOD, endometriosis, and reproductive system inflammation',
+      'Autoimmune conditions, chronic migraines, and fibromyalgia'
+    ],
+    benefits: [
+      'Gradual normalization of blood markers and vital parameters',
+      'Deep emotional peace and freedom from illness-identity',
+      'Significantly reduced dependence on daily chemical medication',
+      'Profound vitality, cellular energy rejuvenation, and mental lightness'
+    ],
+    clientPreparation: [
+      'Have recent diagnostic medical reports / blood work handy',
+      'List the exact timeline when physical symptoms first made their appearance'
+    ],
+    recommendedSessions: '3 - 6 Sessions',
+    investment: '₹4,000 / session',
+    badge: 'Specialty Retreat Focus'
   },
   {
     id: 'redikall-healing',
     title: 'Redikall Multi-Dimensional Healing & Soul Alignment',
-    subtitle: 'Chakra-Consciousness Diagnostics & Energy Clearing',
-    shortDesc: 'Multi-dimensional vibrational healing to untangle mental thought-forms and chakra misalignments.',
-    fullDesc: 'Redikall healing works with specific vibrational statements and chakra consciousness to rapidly recalibrate distorted thoughts, stagnant emotional reservoirs, and spiritual fatigue, returning the bio-energetic body to crystal equilibrium.',
+    subtitle: 'Chakra-Consciousness Diagnostics & Thought-Form Clearing',
+    shortDesc: 'Multi-dimensional vibrational healing to untangle mental thought-forms, chakra misalignments, and energetic fatigue.',
+    fullDesc: 'Redikall healing works with specific vibrational statements, chakra consciousness diagnostics, and subtle frequency keys to rapidly recalibrate distorted thoughts, stagnant emotional reservoirs, and spiritual fatigue, returning the bio-energetic body to crystal equilibrium.',
     durationMinutes: 75,
     format: 'Both',
     category: 'Energy & Aura',
+    image: '/src/assets/real/sanctuary_dharwad.jpg',
+    whyItWorks: 'Human consciousness exists across multiple dimensional octaves. Redikall healing utilizes precise linguistic frequency keys combined with meridian focus points to dissolve rigid crystalline thought-forms lodged in the etheric body.',
+    protocolSteps: [
+      { step: '01', title: 'Multi-Dimensional Chakra Diagnostic', description: 'Scanning the minor and major chakra energy points to locate exact pockets of stagnant resonance.' },
+      { step: '02', title: 'Core Soul Statement Identification', description: 'Uncovering the subconscious belief statement that created the energetic distortion.' },
+      { step: '03', title: 'Recalibration & Energetic Transmutation', description: 'Chanting and transmitting precise Redikall affirmative frequency keys to dissolve the block.' },
+      { step: '04', title: 'Aura Sealing & Vitality Expansion', description: 'Harmonizing the auric sheath to ensure long-term energetic integrity and psychic protection.' }
+    ],
     indications: [
-      'Repetitive thought loops, cognitive fog, and mental fatigue',
-      'Feeling disconnected from personal spiritual vitality',
-      'Chakra imbalances resisting traditional energy work',
-      'Clearing energetic cords from past partnerships'
+      'Repetitive mental thought loops, brain fog, and chronic indecision',
+      'Feeling energetically drained after interacting with certain individuals',
+      'Chakra blockages resisting standard meditation or energy practices',
+      'Cutting toxic cords from past romantic or business partnerships'
+    ],
+    benefits: [
+      'Rapid clearing of heavy mental fog within a single session',
+      'Restoration of vibrant aura boundaries and protection against negative energies',
+      'Heightened intuition and crystalline mental decisiveness',
+      'Harmonization of the 7 subtle bodies and energy meridians'
+    ],
+    clientPreparation: [
+      'Drink plenty of pure water before the session',
+      'Sit comfortably in a quiet, undisturbed space'
     ],
     recommendedSessions: '2 - 3 Sessions',
     investment: '₹3,000 / session'
   },
   {
+    id: 'chakra-healing-aura',
+    title: 'Chakra Healing & Electro-Aura Balancing',
+    subtitle: 'Aligning the 7 Primary Energy Wheels & Biofield Meridian Centers',
+    shortDesc: 'Comprehensive bio-energy cleansing and realignment of Root, Sacral, Solar Plexus, Heart, Throat, Third Eye, and Crown chakras.',
+    fullDesc: 'The chakras are the primary vortexes that regulate physical vitality, emotional stability, and spiritual receptivity. This session clears auric debris, cleanses congested meridians, and re-attunes each chakra wheel to its pure harmonic frequency.',
+    durationMinutes: 75,
+    format: 'Both',
+    category: 'Energy & Aura',
+    image: '/src/assets/real/kirlian_after.png',
+    whyItWorks: 'Physical exhaustion and emotional distress produce dense energetic residue in the nadis (subtle energy channels). By applying resonant harmonic vibration and bio-electrographic balancing, the flow of prana is restored through all 7 centers.',
+    protocolSteps: [
+      { step: '01', title: 'Aura & Chakra Energy Scan', description: 'Identifying overactive, depleted, or congested chakras using intuitive and electro-photonic tools.' },
+      { step: '02', title: 'Auric Cleansing & Cord Cutting', description: 'Sweeping away psychic debris, external negative projections, and unhealthy energetic cords.' },
+      { step: '03', title: 'Individual Chakra Re-Attunement', description: 'Infusing each vortex with its corresponding Vedic seed sound (Bija mantra) and chromatic light frequency.' },
+      { step: '04', title: 'Sushumna Energy Channel Alignment', description: 'Grounding the upward and downward flows of life force through the central spinal pranic tube.' }
+    ],
+    indications: [
+      'Chronic physical lethargy and feeling drained of life motivation',
+      'Inability to speak personal truth (blocked throat chakra)',
+      'Creative blockages, sexual disharmony, or suppressed passion',
+      'Heartbreak, inability to trust, or emotional numbness'
+    ],
+    benefits: [
+      'Immediate sensation of physical lightness and tingling vital warmth',
+      'Emotional unburdening and opening of the heart space',
+      'Balanced appetite, stabilized mood, and deeper breath capacity',
+      'Enhanced psychic intuition and alignment with higher self'
+    ],
+    clientPreparation: [
+      'Avoid wearing dark synthetic clothing if possible (natural fibers preferred)',
+      'Remove metallic jewelry during the session'
+    ],
+    recommendedSessions: '2 - 3 Sessions',
+    investment: '₹3,000 / session'
+  },
+  {
+    id: 'reiki-rajakriya',
+    title: 'Reiki & Rajakriya Reiki Energy Healing',
+    subtitle: 'Traditional Usui & High-Frequency Rajakriya Grand Master Transmissions',
+    shortDesc: 'Universal life-force energy channeling for deep somatic relaxation, pain relief, and profound emotional balancing.',
+    fullDesc: 'Administered by Mrs. Veena Tikare at the Grand Master level, this session channels the highest octaves of Universal Life Energy (Prana/Ki). Rajakriya Reiki works on deeper karmic and genetic levels than standard Usui Reiki, accelerating cellular healing and spiritual attunement.',
+    durationMinutes: 60,
+    format: 'Both',
+    category: 'Energy & Aura',
+    image: '/src/assets/real/sanctuary_dharwad.jpg',
+    whyItWorks: 'Reiki operates through the quantum field of universal life energy. When channeled by an attuned Grand Master, it naturally flows to wherever the client\'s body has the greatest deficiency, initiating cellular rejuvenation without force.',
+    protocolSteps: [
+      { step: '01', title: 'Biofield Scanning (Byosen Reikan-ho)', description: 'Sensing thermal and vibrational fluctuations across the body to locate target areas.' },
+      { step: '02', title: 'Grand Master Sacred Symbol Activation', description: 'Invoking sacred Usui and Rajakriya geometric symbols to anchor high-frequency light.' },
+      { step: '03', title: 'Hand Placements & Meridian Transmission', description: 'Systematic channeling of healing warmth into key organ, endocrine, and lymph centers.' },
+      { step: '04', title: 'Kavacha Auric Sealing', description: 'Sealing the auric cocoon to preserve the elevated vibrational frequency.' }
+    ],
+    indications: [
+      'Post-operative recovery and physical healing acceleration',
+      'Acute stress, nervous breakdown, and sensory overwhelm',
+      'Chronic headaches, joint pain, and inflammatory conditions',
+      'Spiritual exhaustion and need for deep, safe restorative rest'
+    ],
+    benefits: [
+      'Instant profound relaxation and parasympathetic nervous activation',
+      'Natural acceleration of physical tissue and wound recovery',
+      'Gentle release of suppressed crying or stored grief without mental strain',
+      'Feeling enveloped in unconditional, loving golden light'
+    ],
+    clientPreparation: [
+      'Plan a restful evening following the session',
+      'Hydrate well to support energetic detoxification'
+    ],
+    recommendedSessions: '3 Sessions Package Recommended',
+    investment: '₹2,500 / session'
+  },
+  {
+    id: 'angel-therapy',
+    title: 'Angel Therapy & Divine Spiritual Alignment',
+    subtitle: 'Angelic Guidance, Divine Protection & Sacred Cord Severing',
+    shortDesc: 'Connect with Archangelic realms for comforting divine guidance, karmic grace, and clearing heavy negative vibrations.',
+    fullDesc: 'Angel Therapy is a gentle, comforting spiritual modality that invokes Archangels (such as Michael, Raphael, Chamuel, and Gabriel) to dissolve fears, cut toxic attachments, clear psychic debris, and deliver uplifting divine guidance on your life path.',
+    durationMinutes: 60,
+    format: 'Both',
+    category: 'Energy & Aura',
+    image: '/src/assets/real/collage.jpg',
+    whyItWorks: 'Angelic frequencies represent divine consciousness in its purest benevolent state. Connecting with these archetypal frequencies raises the human vibration immediately, allowing feelings of isolation, fear, and hopelessness to be replaced by serene trust.',
+    protocolSteps: [
+      { step: '01', title: 'Sacred Space Blessing & Invocations', description: 'Creating a protected, high-frequency sanctuary space of divine light.' },
+      { step: '02', title: 'Archangel Michael Cord Cutting', description: 'Releasing toxic energetic attachments to past partners, workplaces, or situations.' },
+      { step: '03', title: 'Archangel Raphael Emerald Healing Light', description: 'Infusing emotional wounds and physical challenges with restorative emerald luminescence.' },
+      { step: '04', title: 'Angelic Oracle Guidance & Messages', description: 'Receiving intuitive messages, signs, and counsel tailored to your life situation.' }
+    ],
+    indications: [
+      'Overwhelming grief, heartbreak, or feeling completely abandoned',
+      'Persistent fear of the future, lack of trust in life, or nightmares',
+      'Feeling drained by toxic family members or co-workers',
+      'Seeking connection with higher spiritual guides and guardian angels'
+    ],
+    benefits: [
+      'An unmistakable feeling of being held, safe, and deeply loved',
+      'Dissolution of fear-based anxiety and dread',
+      'Freedom from obsessive attachments and energetic leeches',
+      'Clarity on your divine life path and upcoming decisions'
+    ],
+    clientPreparation: [
+      'Come with specific questions or areas where you need divine comfort',
+      'Keep an open, receptive mindset'
+    ],
+    recommendedSessions: 'As needed',
+    investment: '₹2,800 / session'
+  },
+  {
     id: 'tarot-reading',
     title: 'Tarot & Intuitive Spiritual Counseling',
-    subtitle: 'Archetypal Divination for Clarity & Life Path Crossroads',
+    subtitle: 'Archetypal Divination for Life Clarity & Karmic Crossroads',
     shortDesc: 'Sacred archetypal card guidance offering deep insights on soul purpose, karmic crossroads, and emotional challenges.',
     fullDesc: 'Far from superstition, authentic tarot is an archetypal mirror of the subconscious. Mrs. Veena Tikare interprets the cards through transpersonal psychotherapy lenses, illuminating unseen dynamics in career, family, and spiritual awakening.',
     durationMinutes: 60,
     format: 'Both',
     category: 'Divination & Intuitive',
+    image: '/src/assets/real/veena_tikare.jpg',
+    whyItWorks: 'Tarot cards reflect universal human archetypes (the Hero, the Hermit, the Tower, the Star). By synchronistically drawing cards under intuitive guidance, the hidden unconscious factors influencing your life choices become immediately visible.',
+    protocolSteps: [
+      { step: '01', title: 'Question Framing & Intuitive Attunement', description: 'Clarifying the deeper core questions behind your surface life dilemmas.' },
+      { step: '02', title: 'Sacred Spread Layout & Archetypal Mapping', description: 'Deploying Celtic Cross or Karmic Path spreads to reveal past causes, present blocks, and upcoming probabilities.' },
+      { step: '03', title: 'Psychotherapeutic & Spiritual Interpretation', description: 'Interpreting the dynamics of key relationships, financial choices, and spiritual lessons.' },
+      { step: '04', title: 'Remedies & Empowered Action Plan', description: 'Providing practical energetic remedies, affirmations, and actionable steps to navigate the crossroads.' }
+    ],
     indications: [
-      'Major career dilemmas or business crossroads',
-      'Clarity on romantic partnerships and soulmate contracts',
+      'Major career dilemmas, business transitions, or job crossroads',
+      'Clarity on romantic partnerships, marriage compatibility, and soul contracts',
       'Understanding why certain karmic cycles repeat in your life',
-      'Spiritual guidance during times of grief or radical transition'
+      'Spiritual guidance during times of profound transition or confusion'
+    ],
+    benefits: [
+      'Unbiased clarity on hidden motives and underlying interpersonal dynamics',
+      'Reassurance and strategic foresight on optimal timing for decisions',
+      'Validation of your own quiet gut intuition',
+      'A constructive roadmap to turn crises into spiritual growth'
+    ],
+    clientPreparation: [
+      'Write down 3-5 specific questions you wish to explore',
+      'Ensure a quiet, confidential space for your reading'
     ],
     recommendedSessions: 'As needed',
     investment: '₹2,500 / reading'
+  },
+  {
+    id: 'kirlian-photography',
+    title: 'Kirlian Photography & Electro-Photonic Biofield Diagnostics',
+    subtitle: 'Clinical High-Voltage Bio-Electrography & Coronal Aura Analysis',
+    shortDesc: 'Capture and decode your electromagnetic aura, organ meridian energy links, and pre-somatic chakra imbalances.',
+    fullDesc: 'Using advanced electro-photonic gas discharge imaging apparatus, Kirlian Photography captures the luminous coronal discharge emitted by your fingertips. Mrs. Veena Tikare analyzes these coronal maps to diagnose energy leaks, organ stress, and emotional imbalances up to 6 months before they manifest physically.',
+    durationMinutes: 60,
+    format: 'In-Person (Dharwad)',
+    category: 'Energy & Aura',
+    image: '/src/assets/real/kirlian_before.png',
+    whyItWorks: 'Every living cell emits photons and electromagnetic radiation. High-frequency electrical stimulation triggers a luminous gas discharge around the fingertips, which directly correlates with the 12 primary acupuncture meridians and autonomic nervous system tone.',
+    protocolSteps: [
+      { step: '01', title: 'Fingertip Electro-Photonic Scan', description: 'Photographing coronal discharges of all 10 fingertips using clinical Kirlian hardware.' },
+      { step: '02', title: 'Coronal Sector & Sectoral Mapping', description: 'Analyzing gaps, bursts, and density of corona across the 12 meridian organ zones.' },
+      { step: '03', title: 'Chakra Energy Distribution Graphing', description: 'Generating comprehensive energetic reports showing physical vs emotional exhaustion.' },
+      { step: '04', title: 'Prescriptive Energy Protocol', description: 'Recommending tailored hypnotherapy, PLR, or meditation practices to close biofield leaks.' }
+    ],
+    indications: [
+      'Desire to see objective scientific proof of your subtle energetic field',
+      'Chronic unexplained fatigue when blood tests show normal results',
+      'Tracking energetic improvements before and after healing retreats',
+      'Pre-somatic screening for preventative wellness'
+    ],
+    benefits: [
+      'Visual, objective photographic documentation of your aura and chakras',
+      'Early detection of energetic congestion months before physical onset',
+      'Pinpoint precision on which specific organ meridians require healing',
+      'Side-by-side Before/After retreat comparison scans'
+    ],
+    clientPreparation: [
+      'Clean hands thoroughly with water; avoid applying heavy oils or lotions',
+      'Remove rings and metallic jewelry from hands prior to imaging'
+    ],
+    recommendedSessions: 'Pre & Post Healing Scan',
+    investment: '₹2,800 / complete scan & report',
+    badge: 'Hardware Bio-Scan'
+  },
+  {
+    id: 'breathwork-meditation',
+    title: 'Breathwork, Pranayama & Mindfulness Meditation',
+    subtitle: 'Somatic Breath Journeys & Nervous System Resets',
+    shortDesc: 'Transformative conscious connected breathing and Vedic pranayama to release stored physical trauma and awaken inner bliss.',
+    fullDesc: 'Breath is the bridge connecting the conscious mind to the autonomic nervous system and spiritual soul. Through structured rhythmic breathing sequences, clients oxygenate tissues, release trapped emotional tension from cellular fascia, and enter states of expansive transcendental awareness.',
+    durationMinutes: 75,
+    format: 'Both',
+    category: 'Breath & Meditation',
+    image: '/src/assets/real/sanctuary_dharwad.jpg',
+    whyItWorks: 'Conscious connected breathing alters blood chemistry, quieting the Default Mode Network (DMN) in the brain. This allows trapped somatic defense patterns and emotional grief to gently release from the diaphragm and nervous system.',
+    protocolSteps: [
+      { step: '01', title: 'Breath Assessment & Diaphragmatic Awakening', description: 'Evaluating current respiratory patterns and freeing restricted chest/belly breathing.' },
+      { step: '02', title: 'Vedic Pranayama Balancing', description: 'Nadi Shodhana and Kapalabhati practices to harmonize sympathetic and parasympathetic tones.' },
+      { step: '03', title: 'Conscious Connected Breathwork Journey', description: 'Sustained circular breathing accompanied by therapeutic sacred soundscapes to discharge tension.' },
+      { step: '04', title: 'Stillness, Shavasana & Grounded Integration', description: 'Profound silent meditation anchoring deep tranquility into every cell.' }
+    ],
+    indications: [
+      'Shallow breathing, chronic chest tightness, and panic tendencies',
+      'Inability to quiet racing thoughts during traditional silent meditation',
+      'Stored somatic grief held in the chest, shoulders, or throat',
+      'Desire for natural emotional catharsis without extensive verbal talking'
+    ],
+    benefits: [
+      'Immediate expansion of lung capacity and oxygenation of the brain',
+      'Rapid clearing of trapped emotional charges and chest heaviness',
+      'Profound, blissful stillness and meditative absorption',
+      'Practical breathwork tools you can use anytime to abort stress spikes'
+    ],
+    clientPreparation: [
+      'Do not eat heavy food for 2 hours before the session',
+      'Wear loose, comfortable clothing around the abdomen'
+    ],
+    recommendedSessions: '2 - 4 Sessions',
+    investment: '₹2,500 / session'
   }
 ];
 

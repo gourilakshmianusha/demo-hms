@@ -32,10 +32,12 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="w-full bg-[#FAF8F5] text-slate-800">
       
       {/* 1. HERO SECTION (MATCHING SCREENSHOT FROM MYREINCARNATION.IN) */}
-      <section className="relative pt-12 sm:pt-16 pb-20 bg-gradient-to-b from-[#FFF5E6] via-[#FFF9F2] to-[#FAF8F5] border-b border-amber-200/40 overflow-hidden">
+      <section className="relative pt-12 sm:pt-16 pb-20 bg-gradient-to-b from-[#FFF5E6] via-[#FFF9F2] to-[#FAF8F5] border-b border-amber-200/50 overflow-hidden sacred-glow-radial">
         
-        {/* Subtle Warm Spiritual Aura Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-96 bg-gradient-to-br from-amber-200/30 via-purple-100/20 to-transparent blur-3xl pointer-events-none" />
+        {/* Subtle Warm Spiritual Aura Glow & Sacred Light Geometry */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[450px] bg-gradient-to-br from-amber-300/25 via-purple-200/15 to-transparent blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-amber-200/20 blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-purple-200/20 blur-3xl pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
